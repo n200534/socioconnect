@@ -42,7 +42,7 @@ class CommentResponse(CommentBase):
 class CommentWithAuthor(CommentResponse):
     """Schema for comment with author information."""
     author: UserResponse
-    replies: List[CommentWithAuthor] = []
+    replies: List["CommentWithAuthor"] = []
 
 
 class LikeResponse(BaseModel):

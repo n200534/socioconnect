@@ -2,7 +2,8 @@
 Application configuration settings.
 """
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import validator
 import os
 
 
@@ -17,8 +18,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Database
-    DATABASE_URL: str = "postgresql://username:password@localhost:5432/socioconnect_db"
-    DATABASE_URL_TEST: str = "postgresql://username:password@localhost:5432/socioconnect_test_db"
+    DATABASE_URL: str = "sqlite:///./socioconnect.db"
+    DATABASE_URL_TEST: str = "sqlite:///./socioconnect_test.db"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -30,11 +31,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-    ]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"]
     
     # File Upload
     MAX_FILE_SIZE: int = 10485760  # 10MB
@@ -52,6 +49,8 @@ class Settings(BaseSettings):
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
+        elif isinstance(v, list):
+            return v
         return v
     
     @property
