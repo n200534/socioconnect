@@ -1,3 +1,5 @@
+'use client';
+
 import MainLayout from '@/components/layout/MainLayout';
 import { BellIcon, HeartIcon, ChatBubbleLeftIcon, ArrowPathIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 

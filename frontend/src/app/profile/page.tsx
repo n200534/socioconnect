@@ -1,3 +1,5 @@
+'use client';
+
 import MainLayout from '@/components/layout/MainLayout';
 import PostCard from '@/components/posts/PostCard';
 import { Avatar } from '@radix-ui/react-avatar';
