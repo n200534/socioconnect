@@ -1,70 +1,8 @@
 import MainLayout from '@/components/layout/MainLayout';
 import PostCard from '@/components/posts/PostCard';
+import { usePosts } from '@/contexts/PostsContext';
 
-// Mock data for trending posts
-const trendingPosts = [
-  {
-    id: '1',
-    author: {
-      name: 'Tech News',
-      username: 'technews',
-      avatar: '/api/placeholder/40/40',
-    },
-    content: 'Breaking: New AI breakthrough in natural language processing! This could revolutionize how we interact with technology. 🤖✨',
-    timestamp: '1h',
-    likes: 1250,
-    comments: 89,
-    reposts: 156,
-    isLiked: false,
-    isReposted: false,
-  },
-  {
-    id: '2',
-    author: {
-      name: 'Sarah Wilson',
-      username: 'sarahw',
-      avatar: '/api/placeholder/40/40',
-    },
-    content: 'Just finished reading an amazing book about productivity. The key insight: focus on systems, not goals. What are your favorite productivity tips? 📚',
-    timestamp: '3h',
-    likes: 342,
-    comments: 67,
-    reposts: 23,
-    isLiked: true,
-    isReposted: false,
-  },
-  {
-    id: '3',
-    author: {
-      name: 'Design Daily',
-      username: 'designdaily',
-      avatar: '/api/placeholder/40/40',
-    },
-    content: 'Beautiful minimal design inspiration for today. Sometimes less really is more. What do you think about this aesthetic? 🎨',
-    timestamp: '5h',
-    likes: 567,
-    comments: 34,
-    reposts: 45,
-    isLiked: false,
-    isReposted: true,
-  },
-  {
-    id: '4',
-    author: {
-      name: 'Alex Chen',
-      username: 'alexc',
-      avatar: '/api/placeholder/40/40',
-    },
-    content: 'Coffee shop productivity mode activated! ☕ There\'s something magical about working in a bustling environment. Where\'s your favorite place to work?',
-    timestamp: '7h',
-    likes: 189,
-    comments: 28,
-    reposts: 12,
-    isLiked: false,
-    isReposted: false,
-  },
-];
-
+// TODO: Replace with real trending data from API
 const trendingTopics = [
   { tag: '#AI', posts: '12.5K posts' },
   { tag: '#Productivity', posts: '8.2K posts' },
@@ -74,6 +12,8 @@ const trendingTopics = [
 ];
 
 export default function ExplorePage() {
+  const { posts, isLoading, error } = usePosts();
+
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto">
@@ -87,9 +27,39 @@ export default function ExplorePage() {
               </div>
               
               <div className="divide-y divide-gray-200">
-                {trendingPosts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-8 h-8 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">Loading posts...</p>
+                  </div>
+                ) : error ? (
+                  <div className="p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">Error loading posts: {error}</p>
+                  </div>
+                ) : posts && posts.length > 0 ? (
+                  posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No posts to explore</h3>
+                    <p className="text-gray-500">Check back later for new content!</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -124,25 +94,14 @@ export default function ExplorePage() {
                 <h2 className="text-lg font-semibold text-gray-900">Who to Follow</h2>
               </div>
               <div className="p-4 space-y-4">
-                {[
-                  { name: 'Emma Davis', username: 'emmad', followers: '12.5K followers' },
-                  { name: 'Tech Insights', username: 'techinsights', followers: '8.9K followers' },
-                  { name: 'Creative Studio', username: 'creativestudio', followers: '15.2K followers' },
-                ].map((user, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-                      <div>
-                        <p className="font-medium text-gray-900">{user.name}</p>
-                        <p className="text-sm text-gray-500">@{user.username}</p>
-                        <p className="text-xs text-gray-400">{user.followers}</p>
-                      </div>
-                    </div>
-                    <button className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-full hover:bg-blue-700 transition-colors">
-                      Follow
-                    </button>
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
                   </div>
-                ))}
+                  <p className="text-gray-500 text-sm">Suggestions coming soon</p>
+                </div>
               </div>
             </div>
           </div>
