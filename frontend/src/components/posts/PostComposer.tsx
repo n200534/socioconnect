@@ -9,18 +9,29 @@ import {
   CalendarIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePosts } from '@/contexts/PostsContext';
 
 export default function PostComposer() {
   const [content, setContent] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { user } = useAuth();
+  const { createPost, isLoading } = usePosts();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (content.trim()) {
-      // TODO: Submit post to backend
-      console.log('Posting:', content);
+    if (!content.trim()) return;
+    
+    setError(null);
+    const result = await createPost({ content: content.trim() });
+    
+    if (result.success) {
       setContent('');
       setIsComposing(false);
+    } else {
+      setError(result.error || 'Failed to create post');
     }
   };
 
@@ -36,11 +47,20 @@ export default function PostComposer() {
     return 'text-gray-400';
   };
 
+  if (!user) return null;
+
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 p-6">
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex gap-4">
-          <Avatar className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex-shrink-0 shadow-medium" />
+          <Avatar className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex-shrink-0 shadow-medium flex items-center justify-center text-white font-semibold">
+            {user.full_name.charAt(0).toUpperCase()}
+          </Avatar>
           <div className="flex-1">
             <textarea
               value={content}

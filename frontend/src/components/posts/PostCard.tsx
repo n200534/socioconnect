@@ -17,42 +17,26 @@ import {
   HeartIcon as HeartSolidIcon,
   BookmarkIcon as BookmarkSolidIcon
 } from '@heroicons/react/24/solid';
-
-interface Post {
-  id: string;
-  author: {
-    name: string;
-    username: string;
-    avatar: string;
-  };
-  content: string;
-  timestamp: string;
-  likes: number;
-  comments: number;
-  reposts: number;
-  isLiked: boolean;
-  isReposted: boolean;
-}
+import { usePosts } from '@/contexts/PostsContext';
+import { Post } from '@/lib/api';
 
 interface PostCardProps {
   post: Post;
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [isReposted, setIsReposted] = useState(post.isReposted);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [likes, setLikes] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  
+  const { likePost, repost } = usePosts();
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+  const handleLike = async () => {
+    await likePost(post.id);
   };
 
-  const handleRepost = () => {
-    setIsReposted(!isReposted);
+  const handleRepost = async () => {
+    await repost(post.id);
   };
 
   const handleBookmark = () => {
@@ -83,7 +67,7 @@ export default function PostCard({ post }: PostCardProps) {
               href={`/profile/${post.author.username}`}
               className="font-bold text-gray-900 hover:text-purple-600 transition-colors text-lg"
             >
-              {post.author.name}
+              {post.author.full_name}
             </Link>
             <span className="text-gray-400 text-lg">·</span>
             <Link 
@@ -94,7 +78,7 @@ export default function PostCard({ post }: PostCardProps) {
             </Link>
             <span className="text-gray-400">·</span>
             <time className="text-gray-500 hover:text-gray-700 transition-colors text-sm">
-              {post.timestamp}
+              {new Date(post.created_at).toLocaleDateString()}
             </time>
             
             {/* Menu Button */}
@@ -169,23 +153,23 @@ export default function PostCard({ post }: PostCardProps) {
             <button 
               onClick={handleLike}
               className={`flex items-center gap-3 transition-all duration-300 hover:scale-110 group/btn ${
-                isLiked 
+                post.is_liked 
                   ? 'text-rose-500' 
                   : 'text-gray-500 hover:text-rose-500'
               }`}
             >
               <div className={`p-3 rounded-full transition-all duration-300 ${
-                isLiked 
+                post.is_liked 
                   ? 'bg-rose-50 shadow-medium' 
                   : 'group-hover/btn:bg-rose-50 group-hover/btn:shadow-medium'
               }`}>
-                {isLiked ? (
+                {post.is_liked ? (
                   <HeartSolidIcon className="h-5 w-5 animate-pulse" />
                 ) : (
                   <HeartIcon className="h-5 w-5" />
                 )}
               </div>
-              <span className="text-sm font-semibold">{formatNumber(likes)}</span>
+              <span className="text-sm font-semibold">{formatNumber(post.likes_count)}</span>
             </button>
 
             {/* Bookmark */}
@@ -221,7 +205,7 @@ export default function PostCard({ post }: PostCardProps) {
           {/* Engagement Bar */}
           <div className="mt-4 pt-4 border-t border-gray-100">
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>{formatNumber(likes + post.comments + post.reposts)} total engagements</span>
+              <span>{formatNumber(post.likes_count + post.comments_count + post.reposts_count)} total engagements</span>
               <span>View insights</span>
             </div>
           </div>

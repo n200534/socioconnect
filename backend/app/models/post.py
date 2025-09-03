@@ -31,8 +31,8 @@ class Post(Base):
     reposts = relationship("Repost", back_populates="post", cascade="all, delete-orphan")
     
     # Self-referential relationships for replies and reposts
-    replies = relationship("Post", backref="parent", remote_side=[id])
-    original_post = relationship("Post", backref="reposts", remote_side=[id])
+    replies = relationship("Post", backref="parent", remote_side=[id], foreign_keys=[parent_id])
+    original_post = relationship("Post", backref="reposts", remote_side=[id], foreign_keys=[original_post_id])
     
     def __repr__(self):
         return f"<Post(id={self.id}, author_id={self.author_id}, content='{self.content[:50]}...')>"
