@@ -177,5 +177,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Heroicons for the beautiful icon set
 
 ---
-
+ 
 **Built with ❤️ for the social media community**
