@@ -32,7 +32,7 @@ class Post(Base):
     
     # Self-referential relationships for replies and reposts
     replies = relationship("Post", backref="parent", remote_side=[id], foreign_keys=[parent_id])
-    original_post = relationship("Post", backref="reposts", remote_side=[id], foreign_keys=[original_post_id])
+    original_post = relationship("Post", backref="original_reposts", remote_side=[id], foreign_keys=[original_post_id])
     
     def __repr__(self):
         return f"<Post(id={self.id}, author_id={self.author_id}, content='{self.content[:50]}...')>"

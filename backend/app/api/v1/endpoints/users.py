@@ -63,11 +63,29 @@ async def get_user_profile(
         User.followers.any(follower_id=current_user.id)
     ).first() is not None
     
-    return UserProfile(
-        **user.__dict__,
-        is_following=is_following,
-        is_followed_by=is_followed_by
-    )
+    user_dict = {
+        'id': user.id,
+        'email': user.email,
+        'username': user.username,
+        'full_name': user.full_name,
+        'bio': user.bio,
+        'location': user.location,
+        'website': user.website,
+        'is_private': user.is_private,
+        'avatar_url': user.avatar_url,
+        'cover_url': user.cover_url,
+        'is_active': user.is_active,
+        'is_verified': user.is_verified,
+        'followers_count': user.followers_count,
+        'following_count': user.following_count,
+        'posts_count': user.posts_count,
+        'created_at': user.created_at,
+        'updated_at': user.updated_at,
+        'is_following': is_following,
+        'is_followed_by': is_followed_by
+    }
+    
+    return UserProfile(**user_dict)
 
 
 @router.get("/", response_model=List[UserResponse])

@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Database
-    DATABASE_URL: str = "sqlite:///./socioconnect.db"
-    DATABASE_URL_TEST: str = "sqlite:///./socioconnect_test.db"
+    DATABASE_URL: str = "postgresql://username:password@localhost:5432/socioconnect"
+    DATABASE_URL_TEST: str = "postgresql://username:password@localhost:5432/socioconnect_test"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

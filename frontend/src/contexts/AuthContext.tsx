@@ -64,8 +64,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await apiClient.login(credentials);
       
       if (response.data) {
-        // Store refresh token
-        apiClient.setRefreshToken(response.data.refresh_token);
+        // Store tokens
+        apiClient.setTokens(response.data.access_token, response.data.refresh_token);
         
         // Get user data
         const userResponse = await apiClient.getCurrentUser();

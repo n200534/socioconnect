@@ -73,8 +73,24 @@ async def get_posts(
     # Convert to response format
     post_responses = []
     for post in posts:
-        post_dict = post.__dict__.copy()
-        post_dict['author'] = post.author
+        post_dict = {
+            'id': post.id,
+            'content': post.content,
+            'media_url': post.media_url,
+            'media_type': post.media_type,
+            'author_id': post.author_id,
+            'parent_id': post.parent_id,
+            'is_reply': post.is_reply,
+            'is_repost': post.is_repost,
+            'original_post_id': post.original_post_id,
+            'likes_count': post.likes_count,
+            'comments_count': post.comments_count,
+            'reposts_count': post.reposts_count,
+            'total_engagement': post.total_engagement,
+            'created_at': post.created_at,
+            'updated_at': post.updated_at,
+            'author': post.author
+        }
         post_responses.append(PostWithAuthor(**post_dict))
     
     return PostFeed(
