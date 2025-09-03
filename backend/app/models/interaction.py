@@ -82,8 +82,8 @@ class Follow(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
-    following = relationship("User", foreign_keys=[following_id], back_populates="followers")
+    follower = relationship("User", foreign_keys=[follower_id])
+    following = relationship("User", foreign_keys=[following_id])
     
     # Ensure one follow relationship per pair
     __table_args__ = (UniqueConstraint('follower_id', 'following_id', name='unique_follow_relationship'),)

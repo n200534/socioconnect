@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient, Post, PostCreate } from '@/lib/api';
+import { apiClient, Post, PostCreate, Comment } from '@/lib/api';
 import { useAuth } from './AuthContext';
 
 interface PostsContextType {
@@ -16,6 +16,8 @@ interface PostsContextType {
   createPost: (postData: PostCreate) => Promise<{ success: boolean; error?: string }>;
   likePost: (postId: number) => Promise<void>;
   repost: (postId: number) => Promise<void>;
+  createComment: (postId: number, content: string) => Promise<{ success: boolean; error?: string }>;
+  getComments: (postId: number) => Promise<Comment[]>;
   refreshPosts: () => Promise<void>;
 }
 
@@ -138,9 +140,50 @@ export function PostsProvider({ children }: PostsProviderProps) {
           }
           return post;
         }));
+        
+        // Refresh posts to get the new repost entry
+        await fetchPosts(1, true);
       }
     } catch (error) {
       console.error('Failed to repost:', error);
+    }
+  };
+
+  const createComment = async (postId: number, content: string) => {
+    try {
+      const response = await apiClient.createComment(postId, content);
+      
+      if (response.data) {
+        // Update the post's comment count
+        setPosts(prev => prev.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments_count: post.comments_count + 1
+            };
+          }
+          return post;
+        }));
+        
+        return { success: true };
+      } else if (response.error) {
+        return { success: false, error: response.error };
+      }
+      
+      return { success: false, error: 'Failed to create comment' };
+    } catch (error) {
+      console.error('Failed to create comment:', error);
+      return { success: false, error: 'Failed to create comment' };
+    }
+  };
+
+  const getComments = async (postId: number) => {
+    try {
+      const response = await apiClient.getComments(postId);
+      return response.data || [];
+    } catch (error) {
+      console.error('Failed to fetch comments:', error);
+      return [];
     }
   };
 
@@ -170,6 +213,8 @@ export function PostsProvider({ children }: PostsProviderProps) {
     createPost,
     likePost,
     repost,
+    createComment,
+    getComments,
     refreshPosts,
   };
 

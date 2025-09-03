@@ -3,7 +3,7 @@ Post Pydantic schemas for request/response validation.
 """
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, model_validator
 from app.schemas.user import UserResponse
 
 
@@ -48,8 +48,11 @@ class PostUpdate(BaseModel):
         return v
 
 
-class PostResponse(PostBase):
+class PostResponse(BaseModel):
     """Schema for post response."""
+    content: str
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
     id: int
     author_id: int
     parent_id: Optional[int] = None
@@ -62,6 +65,27 @@ class PostResponse(PostBase):
     total_engagement: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    @model_validator(mode='after')
+    def validate_content_for_reposts(self):
+        # Allow empty content for reposts
+        if self.is_repost:
+            return self
+            
+        # For non-reposts, use the original validation
+        if len(self.content.strip()) == 0:
+            raise ValueError('Post content cannot be empty')
+        if len(self.content) > 280:
+            raise ValueError('Post content must be less than 280 characters')
+        
+        self.content = self.content.strip()
+        return self
+    
+    @validator('media_type')
+    def validate_media_type(cls, v):
+        if v is not None and v not in ['image', 'video', 'gif']:
+            raise ValueError('Media type must be image, video, or gif')
+        return v
     
     class Config:
         from_attributes = True

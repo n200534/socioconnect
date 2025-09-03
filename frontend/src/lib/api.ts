@@ -34,6 +34,8 @@ export interface Post {
   media_url?: string;
   media_type?: string;
   is_reply: boolean;
+  is_repost: boolean;
+  original_post_id?: number;
   created_at: string;
   updated_at: string;
   likes_count: number;
@@ -42,6 +44,7 @@ export interface Post {
   author: User;
   is_liked?: boolean;
   is_reposted?: boolean;
+  original_post?: Post;
 }
 
 export interface PostCreate {
@@ -49,6 +52,18 @@ export interface PostCreate {
   parent_id?: number;
   media_url?: string;
   media_type?: string;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  author_id: number;
+  post_id: number;
+  created_at: string;
+  updated_at: string;
+  author: User;
+  likes_count: number;
+  is_liked?: boolean;
 }
 
 export interface AuthTokens {
@@ -103,6 +118,7 @@ class ApiClient {
 
     try {
       console.log(`Making request to: ${url}`);
+      console.log('API_BASE_URL:', API_BASE_URL);
       console.log('Request headers:', headers);
       console.log('Request options:', options);
 
@@ -163,6 +179,15 @@ class ApiClient {
       return { data };
     } catch (error) {
       console.error('Network Error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', error);
+      
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        return {
+          error: 'Cannot connect to server. Please check if the backend is running on http://localhost:8000'
+        };
+      }
+      
       return {
         error: error instanceof Error ? error.message : 'Network error',
       };
@@ -265,6 +290,17 @@ class ApiClient {
     });
   }
 
+  async createComment(postId: number, content: string): Promise<ApiResponse<{ message: string; comment_id: number }>> {
+    return this.request(`/api/v1/interactions/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async getComments(postId: number): Promise<ApiResponse<Comment[]>> {
+    return this.request(`/api/v1/interactions/posts/${postId}/comments`);
+  }
+
   async followUser(userId: number): Promise<ApiResponse<{ message: string; following: boolean }>> {
     return this.request(`/api/v1/interactions/users/${userId}/follow`, {
       method: 'POST',
@@ -296,6 +332,36 @@ class ApiClient {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
     }
+  }
+
+  // User methods
+  async getUserProfile(userId: number): Promise<ApiResponse<User>> {
+    return this.request<User>(`/api/v1/users/${userId}`);
+  }
+
+  async updateProfile(profileData: {
+    full_name?: string;
+    username?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+  }): Promise<ApiResponse<User>> {
+    return this.request<User>('/api/v1/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async followUser(userId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/api/v1/users/${userId}/follow`, {
+      method: 'POST',
+    });
+  }
+
+  async unfollowUser(userId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/api/v1/users/${userId}/follow`, {
+      method: 'DELETE',
+    });
   }
 
   isAuthenticated(): boolean {

@@ -37,14 +37,12 @@ class User(Base):
     # Follow relationships
     following = relationship(
         "Follow", 
-        foreign_keys="Follow.follower_id",
-        back_populates="follower",
+        foreign_keys="[Follow.follower_id]",
         cascade="all, delete-orphan"
     )
     followers = relationship(
         "Follow", 
-        foreign_keys="Follow.following_id",
-        back_populates="following",
+        foreign_keys="[Follow.following_id]",
         cascade="all, delete-orphan"
     )
     

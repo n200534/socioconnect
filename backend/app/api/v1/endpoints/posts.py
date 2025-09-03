@@ -54,6 +54,21 @@ async def get_public_posts(
             'updated_at': post.updated_at,
             'author': post.author
         }
+        
+        # If this is a repost, include the original post data
+        if post.is_repost and post.original_post_id:
+            original_post = db.query(Post).filter(Post.id == post.original_post_id).first()
+            if original_post:
+                post_dict['original_post'] = {
+                    'id': original_post.id,
+                    'content': original_post.content,
+                    'media_url': original_post.media_url,
+                    'media_type': original_post.media_type,
+                    'author_id': original_post.author_id,
+                    'created_at': original_post.created_at,
+                    'author': original_post.author
+                }
+        
         post_responses.append(PostWithAuthor(**post_dict))
     
     return PostFeed(

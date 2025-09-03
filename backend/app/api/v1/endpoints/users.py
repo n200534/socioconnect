@@ -8,6 +8,7 @@ from typing import List, Optional
 from app.db.database import get_db
 from app.schemas.user import UserResponse, UserUpdate, UserProfile
 from app.models.user import User
+from app.models.interaction import Follow
 from app.api.v1.endpoints.auth import get_current_user
 
 router = APIRouter()
@@ -52,15 +53,15 @@ async def get_user_profile(
         )
     
     # Check if current user follows this user
-    is_following = db.query(User.following).filter(
-        User.id == current_user.id,
-        User.following.any(following_id=user_id)
+    is_following = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == user_id
     ).first() is not None
     
     # Check if this user follows current user
-    is_followed_by = db.query(User.followers).filter(
-        User.id == user_id,
-        User.followers.any(follower_id=current_user.id)
+    is_followed_by = db.query(Follow).filter(
+        Follow.follower_id == user_id,
+        Follow.following_id == current_user.id
     ).first() is not None
     
     user_dict = {
@@ -76,8 +77,8 @@ async def get_user_profile(
         'cover_url': user.cover_url,
         'is_active': user.is_active,
         'is_verified': user.is_verified,
-        'followers_count': user.followers_count,
-        'following_count': user.following_count,
+        'followers_count': db.query(Follow).filter(Follow.following_id == user_id).count(),
+        'following_count': db.query(Follow).filter(Follow.follower_id == user_id).count(),
         'posts_count': user.posts_count,
         'created_at': user.created_at,
         'updated_at': user.updated_at,
@@ -86,6 +87,88 @@ async def get_user_profile(
     }
     
     return UserProfile(**user_dict)
+
+
+@router.post("/{user_id}/follow")
+async def follow_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Follow a user."""
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot follow yourself"
+        )
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if already following
+    existing_follow = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == user_id
+    ).first()
+    
+    if existing_follow:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Already following this user"
+        )
+    
+    # Create new follow relationship
+    new_follow = Follow(
+        follower_id=current_user.id,
+        following_id=user_id
+    )
+    db.add(new_follow)
+    db.commit()
+    
+    return {"message": f"Successfully followed {target_user.username}"}
+
+
+@router.delete("/{user_id}/follow")
+async def unfollow_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unfollow a user."""
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unfollow yourself"
+        )
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if currently following
+    existing_follow = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == user_id
+    ).first()
+    
+    if not existing_follow:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Not following this user"
+        )
+    
+    # Remove the follow relationship
+    db.delete(existing_follow)
+    db.commit()
+    
+    return {"message": f"Successfully unfollowed {target_user.username}"}
 
 
 @router.get("/", response_model=List[UserResponse])

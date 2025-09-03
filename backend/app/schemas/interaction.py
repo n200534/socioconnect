@@ -24,7 +24,7 @@ class CommentBase(BaseModel):
 
 class CommentCreate(CommentBase):
     """Schema for comment creation."""
-    post_id: int
+    pass  # post_id comes from URL path
 
 
 class CommentResponse(CommentBase):

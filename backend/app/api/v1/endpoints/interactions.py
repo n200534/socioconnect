@@ -132,15 +132,36 @@ async def repost(
     ).first()
     
     if existing_repost:
-        # Un-repost
+        # Un-repost - delete both the Repost record and the repost Post entry
         db.delete(existing_repost)
+        
+        # Find and delete the repost post entry
+        repost_post = db.query(Post).filter(
+            Post.author_id == current_user.id,
+            Post.is_repost == True,
+            Post.original_post_id == post_id
+        ).first()
+        
+        if repost_post:
+            db.delete(repost_post)
+        
         db.commit()
         return {"message": "Post un-reposted", "reposted": False}
     else:
-        # Repost
+        # Repost - create both a Repost record and a new Post entry
         new_repost = Repost(user_id=current_user.id, post_id=post_id)
         db.add(new_repost)
+        
+        # Create a new post entry for the repost
+        repost_post = Post(
+            author_id=current_user.id,
+            content="Reposted",  # Give reposts a default content
+            is_repost=True,
+            original_post_id=post_id
+        )
+        db.add(repost_post)
         db.commit()
+        
         return {"message": "Post reposted", "reposted": True}
 
 

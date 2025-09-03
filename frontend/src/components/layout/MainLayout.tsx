@@ -7,7 +7,6 @@ import {
   HomeIcon, 
   MagnifyingGlassIcon, 
   BellIcon, 
-  EnvelopeIcon,
   UserIcon,
   PlusIcon,
   Bars3Icon,
@@ -18,16 +17,15 @@ import {
   HomeIcon as HomeSolidIcon,
   MagnifyingGlassIcon as SearchSolidIcon,
   BellIcon as BellSolidIcon,
-  EnvelopeIcon as EnvelopeSolidIcon,
   UserIcon as UserSolidIcon
 } from '@heroicons/react/24/solid';
 import { Avatar } from '@radix-ui/react-avatar';
+import PostModal from '@/components/posts/PostModal';
 
 const navigation = [
   { name: 'Home', href: '/', icon: HomeIcon, solidIcon: HomeSolidIcon },
   { name: 'Explore', href: '/explore', icon: MagnifyingGlassIcon, solidIcon: SearchSolidIcon },
   { name: 'Notifications', href: '/notifications', icon: BellIcon, solidIcon: BellSolidIcon },
-  { name: 'Messages', href: '/messages', icon: EnvelopeIcon, solidIcon: EnvelopeSolidIcon },
   { name: 'Profile', href: '/profile', icon: UserIcon, solidIcon: UserSolidIcon },
 ];
 
@@ -37,6 +35,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [postModalOpen, setPostModalOpen] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -81,6 +80,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </Link>
               );
             })}
+            
+            {/* Post Button - Mobile */}
+            <button 
+              onClick={() => {
+                setPostModalOpen(true);
+                setSidebarOpen(false);
+              }}
+              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-semibold shadow-medium hover:shadow-large hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Post
+            </button>
           </nav>
         </div>
       </div>
@@ -120,7 +131,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
             })}
             
             {/* Post Button */}
-            <button className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-semibold shadow-medium hover:shadow-large hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
+            <button 
+              onClick={() => setPostModalOpen(true)}
+              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-semibold shadow-medium hover:shadow-large hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+            >
               <PlusIcon className="h-5 w-5" />
               Post
             </button>
@@ -166,9 +180,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <button className="p-2 hover:bg-white/20 rounded-full transition-colors">
                 <BellIcon className="h-6 w-6 text-gray-600" />
               </button>
-              <button className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                <EnvelopeIcon className="h-6 w-6 text-gray-600" />
-              </button>
             </div>
           </div>
         </div>
@@ -180,6 +191,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </main>
       </div>
+
+      {/* Post Modal */}
+      <PostModal 
+        isOpen={postModalOpen} 
+        onClose={() => setPostModalOpen(false)} 
+      />
     </div>
   );
 }
