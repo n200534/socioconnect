@@ -26,7 +26,21 @@ export default function LoginPage() {
     if (result.success) {
       router.push('/');
     } else {
-      setError(result.error || 'Login failed');
+      // Handle different error formats
+      let errorMessage = 'Login failed';
+      if (result.error) {
+        if (typeof result.error === 'string') {
+          errorMessage = result.error;
+        } else if (Array.isArray(result.error)) {
+          // Handle validation errors array
+          errorMessage = result.error.map((err: any) => err.msg || err.message || 'Validation error').join(', ');
+        } else if (result.error.detail) {
+          errorMessage = result.error.detail;
+        } else if (result.error.message) {
+          errorMessage = result.error.message;
+        }
+      }
+      setError(errorMessage);
     }
   };
 

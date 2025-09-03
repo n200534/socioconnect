@@ -89,19 +89,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await apiClient.register(userData);
       
       if (response.data) {
-        // Store refresh token
-        apiClient.setRefreshToken(response.data.refresh_token);
+        // Store tokens
+        apiClient.setTokens(response.data.access_token, response.data.refresh_token);
         
         // Get user data
         const userResponse = await apiClient.getCurrentUser();
         if (userResponse.data) {
           setUser(userResponse.data);
           return { success: true };
+        } else {
+          console.error('Failed to get user data after registration:', userResponse.error);
+          return { success: false, error: userResponse.error || 'Failed to get user data' };
         }
       }
       
       return { success: false, error: response.error || 'Registration failed' };
     } catch (error) {
+      console.error('Registration error:', error);
       return { success: false, error: 'Network error' };
     } finally {
       setIsLoading(false);

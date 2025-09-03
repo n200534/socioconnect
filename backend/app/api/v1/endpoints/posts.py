@@ -14,6 +14,58 @@ from app.api.v1.endpoints.auth import get_current_user
 router = APIRouter()
 
 
+@router.get("/test")
+async def test_posts_endpoint():
+    """Test endpoint to verify GET method works."""
+    return {"message": "Posts GET endpoint is working", "status": "success"}
+
+
+@router.get("/public")
+async def get_public_posts(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Get public posts without authentication."""
+    offset = (page - 1) * size
+    
+    # Get recent posts
+    posts = db.query(Post).order_by(Post.created_at.desc()).offset(offset).limit(size).all()
+    total = db.query(Post).count()
+    
+    # Convert to response format
+    post_responses = []
+    for post in posts:
+        post_dict = {
+            'id': post.id,
+            'content': post.content,
+            'media_url': post.media_url,
+            'media_type': post.media_type,
+            'author_id': post.author_id,
+            'parent_id': post.parent_id,
+            'is_reply': post.is_reply,
+            'is_repost': post.is_repost,
+            'original_post_id': post.original_post_id,
+            'likes_count': post.likes_count,
+            'comments_count': post.comments_count,
+            'reposts_count': post.reposts_count,
+            'total_engagement': post.total_engagement,
+            'created_at': post.created_at,
+            'updated_at': post.updated_at,
+            'author': post.author
+        }
+        post_responses.append(PostWithAuthor(**post_dict))
+    
+    return PostFeed(
+        posts=post_responses,
+        total=total,
+        page=page,
+        size=size,
+        has_next=(offset + size) < total,
+        has_prev=page > 1
+    )
+
+
 @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_data: PostCreate,

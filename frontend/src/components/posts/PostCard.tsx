@@ -43,7 +43,8 @@ export default function PostCard({ post }: PostCardProps) {
     setIsBookmarked(!isBookmarked);
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | undefined) => {
+    if (num === undefined || num === null) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
@@ -127,26 +128,26 @@ export default function PostCard({ post }: PostCardProps) {
               <div className="p-3 rounded-full group-hover/btn:bg-cyan-50 transition-all duration-300 group-hover/btn:shadow-medium">
                 <ChatBubbleLeftIcon className="h-5 w-5" />
               </div>
-              <span className="text-sm font-semibold">{formatNumber(post.comments)}</span>
+              <span className="text-sm font-semibold">{formatNumber(post.comments_count)}</span>
             </button>
 
             {/* Repost */}
             <button 
               onClick={handleRepost}
               className={`flex items-center gap-3 transition-all duration-300 hover:scale-110 group/btn ${
-                isReposted 
+                post.is_reposted 
                   ? 'text-emerald-500' 
                   : 'text-gray-500 hover:text-emerald-500'
               }`}
             >
               <div className={`p-3 rounded-full transition-all duration-300 ${
-                isReposted 
+                post.is_reposted 
                   ? 'bg-emerald-50 shadow-medium' 
                   : 'group-hover/btn:bg-emerald-50 group-hover/btn:shadow-medium'
               }`}>
-                <ArrowPathIcon className={`h-5 w-5 ${isReposted ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={`h-5 w-5 ${post.is_reposted ? 'animate-spin' : ''}`} />
               </div>
-              <span className="text-sm font-semibold">{formatNumber(post.reposts)}</span>
+              <span className="text-sm font-semibold">{formatNumber(post.reposts_count)}</span>
             </button>
 
             {/* Like */}

@@ -47,21 +47,28 @@ export function PostsProvider({ children }: PostsProviderProps) {
       
       if (response.data) {
         if (refresh || page === 1) {
-          setPosts(response.data.posts);
+          setPosts(response.data.posts || []);
         } else {
-          setPosts(prev => [...prev, ...response.data.posts]);
+          setPosts(prev => [...prev, ...(response.data.posts || [])]);
         }
         
-        setHasNext(response.data.has_next);
-        setHasPrev(response.data.has_prev);
-        setCurrentPage(response.data.page);
-        setTotalPosts(response.data.total);
+        setHasNext(response.data.has_next || false);
+        setHasPrev(response.data.has_prev || false);
+        setCurrentPage(response.data.page || 1);
+        setTotalPosts(response.data.total || 0);
       } else {
+        console.error('Posts API Error:', response.error);
         setError(response.error || 'Failed to fetch posts');
       }
     } catch (error) {
-      setError('Network error');
       console.error('Failed to fetch posts:', error);
+      setError('Network error - please check if the server is running');
+      // Set empty posts array to prevent crashes
+      setPosts([]);
+      setHasNext(false);
+      setHasPrev(false);
+      setCurrentPage(1);
+      setTotalPosts(0);
     } finally {
       setIsLoading(false);
     }

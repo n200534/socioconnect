@@ -117,16 +117,46 @@ class ApiClient {
 
       let data;
       try {
-        data = await response.json();
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (responseText.trim() === '') {
+          data = { detail: `Empty response from server (${response.status})` };
+        } else {
+          data = JSON.parse(responseText);
+        }
+        
+        // Handle empty object responses
+        if (data && typeof data === 'object' && Object.keys(data).length === 0) {
+          data = { detail: `Empty response object from server (${response.status})` };
+        }
       } catch (e) {
-        // If response is not JSON, create a generic error
+        console.error('Failed to parse response:', e);
         data = { detail: `HTTP ${response.status}: ${response.statusText}` };
       }
 
-      if (!response.ok) {
+      // Check for successful status codes (200-299)
+      if (response.status < 200 || response.status >= 300) {
         console.error('API Error:', data);
+        
+        // Handle different error formats
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            // Handle validation errors array
+            errorMessage = data.detail.map((err: any) => err.msg || err.message || 'Validation error').join(', ');
+          } else if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          }
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+        
         return {
-          error: data.detail || data.message || `HTTP ${response.status}: ${response.statusText}`,
+          error: errorMessage,
         };
       }
 
@@ -199,11 +229,16 @@ class ApiClient {
 
   // Post methods
   async getPosts(page = 1, size = 20): Promise<ApiResponse<{ posts: Post[]; total: number; page: number; size: number; has_next: boolean; has_prev: boolean }>> {
-    return this.request(`/api/v1/posts?page=${page}&size=${size}`);
+    // Try public endpoint first to test if authentication is the issue
+    return this.request(`/api/v1/posts/public?page=${page}&size=${size}`);
   }
 
   async getPost(postId: number): Promise<ApiResponse<Post>> {
     return this.request<Post>(`/api/v1/posts/${postId}`);
+  }
+
+  async testPostsEndpoint(): Promise<ApiResponse<any>> {
+    return this.request(`/api/v1/posts/test`);
   }
 
   async createPost(postData: PostCreate): Promise<ApiResponse<Post>> {
@@ -248,6 +283,11 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       localStorage.setItem('refresh_token', token);
     }
+  }
+
+  setTokens(accessToken: string, refreshToken: string): void {
+    this.setAccessToken(accessToken);
+    this.setRefreshToken(refreshToken);
   }
 
   clearTokens(): void {
