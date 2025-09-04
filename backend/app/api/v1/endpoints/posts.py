@@ -2,7 +2,7 @@
 Post endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 
 from app.db.database import get_db
@@ -29,8 +29,8 @@ async def get_public_posts(
     """Get public posts without authentication."""
     offset = (page - 1) * size
     
-    # Get recent posts
-    posts = db.query(Post).order_by(Post.created_at.desc()).offset(offset).limit(size).all()
+    # Get recent posts with author relationship loaded
+    posts = db.query(Post).options(joinedload(Post.author)).order_by(Post.created_at.desc()).offset(offset).limit(size).all()
     total = db.query(Post).count()
     
     # Convert to response format
@@ -57,7 +57,7 @@ async def get_public_posts(
         
         # If this is a repost, include the original post data
         if post.is_repost and post.original_post_id:
-            original_post = db.query(Post).filter(Post.id == post.original_post_id).first()
+            original_post = db.query(Post).options(joinedload(Post.author)).filter(Post.id == post.original_post_id).first()
             if original_post:
                 post_dict['original_post'] = {
                     'id': original_post.id,
@@ -81,7 +81,7 @@ async def get_public_posts(
     )
 
 
-@router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=PostWithAuthor, status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_data: PostCreate,
     current_user: User = Depends(get_current_user),
@@ -111,7 +111,30 @@ async def create_post(
     db.commit()
     db.refresh(db_post)
     
-    return db_post
+    # Construct the response with all required fields
+    # Use current_user as the author since we know it's the author of this post
+    post_dict = {
+        'id': db_post.id,
+        'content': db_post.content,
+        'media_url': db_post.media_url,
+        'media_type': db_post.media_type,
+        'author_id': db_post.author_id,
+        'parent_id': db_post.parent_id,
+        'is_reply': db_post.is_reply,
+        'is_repost': db_post.is_repost,
+        'original_post_id': db_post.original_post_id,
+        'likes_count': db_post.likes_count,
+        'comments_count': db_post.comments_count,
+        'reposts_count': db_post.reposts_count,
+        'total_engagement': db_post.total_engagement,
+        'created_at': db_post.created_at,
+        'updated_at': db_post.updated_at,
+        'author': current_user,  # Use current_user as the author
+        'is_liked': False,  # New post, not liked yet
+        'is_reposted': False  # New post, not reposted yet
+    }
+    
+    return PostWithAuthor(**post_dict)
 
 
 @router.get("/", response_model=PostFeed)
@@ -128,7 +151,7 @@ async def get_posts(
     following_ids = [f.following_id for f in current_user.following]
     following_ids.append(current_user.id)  # Include current user's posts
     
-    posts = db.query(Post).filter(
+    posts = db.query(Post).options(joinedload(Post.author)).filter(
         Post.author_id.in_(following_ids)
     ).order_by(Post.created_at.desc()).offset(offset).limit(size).all()
     
@@ -177,7 +200,7 @@ async def get_post(
     db: Session = Depends(get_db)
 ):
     """Get a specific post by ID."""
-    post = db.query(Post).filter(Post.id == post_id).first()
+    post = db.query(Post).options(joinedload(Post.author)).filter(Post.id == post_id).first()
     
     if not post:
         raise HTTPException(
@@ -189,6 +212,36 @@ async def get_post(
     post_dict['author'] = post.author
     
     return PostWithAuthor(**post_dict)
+
+
+@router.delete("/{post_id}")
+async def delete_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a post by ID."""
+    # Get the post
+    post = db.query(Post).filter(Post.id == post_id).first()
+    
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    
+    # Check if the current user is the author of the post
+    if post.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own posts"
+        )
+    
+    # Delete the post (cascade will handle related data)
+    db.delete(post)
+    db.commit()
+    
+    return {"message": "Post deleted successfully"}
 
 
 @router.get("/user/{user_id}", response_model=PostFeed)
@@ -209,7 +262,7 @@ async def get_user_posts(
     
     offset = (page - 1) * size
     
-    posts = db.query(Post).filter(
+    posts = db.query(Post).options(joinedload(Post.author)).filter(
         Post.author_id == user_id
     ).order_by(Post.created_at.desc()).offset(offset).limit(size).all()
     

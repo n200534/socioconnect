@@ -10,13 +10,16 @@ import {
   ShareIcon,
   EllipsisHorizontalIcon,
   EyeIcon,
-  FlagIcon
+  FlagIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { 
   HeartIcon as HeartSolidIcon
 } from '@heroicons/react/24/solid';
 import { usePosts } from '@/contexts/PostsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Post } from '@/lib/api';
+import { getMediaUrl } from '@/lib/media';
 
 interface PostCardProps {
   post: Post;
@@ -30,8 +33,22 @@ export default function PostCard({ post }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Ensure author data exists with fallbacks
+  const author = post.author || {
+    id: 0,
+    username: 'unknown',
+    full_name: 'Unknown User',
+    avatar_url: null
+  };
   
-  const { likePost, repost, createComment } = usePosts();
+  const { likePost, repost, createComment, deletePost } = usePosts();
+  const { user } = useAuth();
+  
+  // Check if current user is the author of this post
+  const isAuthor = user?.id === post.author_id;
 
   const handleLike = async () => {
     setIsLiking(true);
@@ -71,6 +88,22 @@ export default function PostCard({ post }: PostCardProps) {
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deletePost(post.id);
+      if (!result.success) {
+        console.error('Failed to delete post:', result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      setShowMenu(false);
+    }
+  };
+
   const handleRepost = async () => {
     setIsReposting(true);
     try {
@@ -99,7 +132,7 @@ export default function PostCard({ post }: PostCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex gap-4">
-        <Link href={`/profile/${post.author.username}`}>
+        <Link href={`/profile/${author.username}`}>
           <Avatar className="h-14 w-14 rounded-full gradient-primary flex-shrink-0 cursor-pointer shadow-medium hover:shadow-large transition-all duration-300 hover:scale-110" />
         </Link>
         
@@ -107,17 +140,17 @@ export default function PostCard({ post }: PostCardProps) {
           {/* Header */}
           <div className="flex items-center gap-2 mb-4">
             <Link 
-              href={`/profile/${post.author.username}`}
+              href={`/profile/${author.username}`}
               className="font-bold text-gray-900 hover:text-purple-600 transition-colors text-lg"
             >
-              {post.author.full_name}
+              {author.full_name}
             </Link>
             <span className="text-gray-400 text-lg">·</span>
             <Link 
-              href={`/profile/${post.author.username}`}
+              href={`/profile/${author.username}`}
               className="text-gray-500 hover:text-purple-600 transition-colors font-medium hover:underline"
             >
-              @{post.author.username}
+              @{author.username}
             </Link>
             <span className="text-gray-400">·</span>
             <time className="text-gray-500 hover:text-gray-700 transition-colors text-sm">
@@ -151,6 +184,24 @@ export default function PostCard({ post }: PostCardProps) {
                     <FlagIcon className="h-4 w-4" />
                     Report post
                   </button>
+                  
+                  {/* Delete button - only show for post author */}
+                  {isAuthor && (
+                    <>
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteConfirm(true);
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                        Delete post
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -162,19 +213,46 @@ export default function PostCard({ post }: PostCardProps) {
               <div className="border-l-4 border-purple-200 pl-4 bg-purple-50 rounded-r-lg p-4">
                 <div className="flex items-center gap-2 mb-2 text-sm text-purple-600">
                   <ArrowPathIcon className="h-4 w-4" />
-                  <span className="font-medium">Reposted by {post.author.full_name}</span>
+                  <span className="font-medium">Reposted by {author.full_name}</span>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-purple-100">
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar className="h-8 w-8 rounded-full gradient-primary flex-shrink-0" />
                     <div>
-                      <span className="font-bold text-gray-900 text-sm">{post.original_post.author.full_name}</span>
-                      <span className="text-gray-500 text-sm ml-2">@{post.original_post.author.username}</span>
+                      <span className="font-bold text-gray-900 text-sm">{post.original_post.author?.full_name || 'Unknown User'}</span>
+                      <span className="text-gray-500 text-sm ml-2">@{post.original_post.author?.username || 'unknown'}</span>
                     </div>
                   </div>
                   <p className="text-gray-900 whitespace-pre-wrap leading-relaxed text-base font-medium">
                     {post.original_post.content}
                   </p>
+                  
+                  {/* Original Post Media */}
+                  {post.original_post.media_url && (
+                    <div className="mt-3 rounded-xl overflow-hidden">
+                      {post.original_post.media_type === 'image' ? (
+                        <img 
+                          src={getMediaUrl(post.original_post.media_url) || ''} 
+                          alt="Original post media" 
+                          className="w-full max-h-64 object-cover rounded-xl"
+                          onError={(e) => {
+                            console.error('Failed to load original post image:', post.original_post?.media_url);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : post.original_post.media_type === 'video' ? (
+                        <video 
+                          src={getMediaUrl(post.original_post.media_url) || ''} 
+                          controls 
+                          className="w-full max-h-64 object-cover rounded-xl"
+                          onError={(e) => {
+                            console.error('Failed to load original post video:', post.original_post?.media_url);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -183,6 +261,33 @@ export default function PostCard({ post }: PostCardProps) {
               </p>
             )}
           </div>
+
+          {/* Media Display */}
+          {post.media_url && (
+            <div className="mt-4 rounded-2xl overflow-hidden">
+              {post.media_type === 'image' ? (
+                <img 
+                  src={getMediaUrl(post.media_url) || ''} 
+                  alt="Post media" 
+                  className="w-full max-h-96 object-cover rounded-2xl"
+                  onError={(e) => {
+                    console.error('Failed to load image:', post.media_url);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : post.media_type === 'video' ? (
+                <video 
+                  src={getMediaUrl(post.media_url) || ''} 
+                  controls 
+                  className="w-full max-h-96 object-cover rounded-2xl"
+                  onError={(e) => {
+                    console.error('Failed to load video:', post.media_url);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+            </div>
+          )}
 
           {/* Enhanced Actions */}
           <div className="flex items-center justify-between max-w-2xl">
@@ -320,6 +425,46 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrashIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Post</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this post? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { fileUploader, UploadProgress } from '@/lib/upload';
 import { useAuth } from '@/contexts/AuthContext';
+import { getProfilePictureUrl } from '@/lib/media';
 
 interface ProfilePictureUploadProps {
   onUpload?: (url: string) => void;
@@ -102,11 +103,35 @@ export default function ProfilePictureUpload({
 
   const getAvatarContent = () => {
     if (preview) {
-      return <img src={preview} alt="Preview" className="w-full h-full object-cover" />;
+      return (
+        <div className="relative w-full h-full">
+          <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+          {isUploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="text-center text-white">
+                <CloudArrowUpIcon className="h-6 w-6 mx-auto mb-1 animate-bounce" />
+                {uploadProgress && (
+                  <div className="w-12 bg-white/20 rounded-full h-1">
+                    <div 
+                      className="bg-white h-1 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress.percentage}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {!isUploading && (
+            <div className="absolute top-1 left-1">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+          )}
+        </div>
+      );
     }
     
     if (user?.avatar_url) {
-      return <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />;
+      return <img src={getProfilePictureUrl(user.avatar_url) || ''} alt={user.full_name} className="w-full h-full object-cover" />;
     }
     
     return (
@@ -143,14 +168,22 @@ export default function ProfilePictureUpload({
           {isUploading ? (
             <div className="text-center text-white">
               <CloudArrowUpIcon className="h-6 w-6 mx-auto mb-1 animate-bounce" />
+              <p className="text-xs">Uploading...</p>
               {uploadProgress && (
-                <div className="w-16 bg-white/20 rounded-full h-1">
+                <div className="w-16 bg-white/20 rounded-full h-1 mt-1">
                   <div 
                     className="bg-white h-1 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress.percentage}%` }}
                   />
                 </div>
               )}
+            </div>
+          ) : preview ? (
+            <div className="text-center text-white">
+              <div className="w-6 h-6 mx-auto mb-1 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
+              <p className="text-xs">Ready</p>
             </div>
           ) : (
             <CameraIcon className="h-6 w-6 text-white" />

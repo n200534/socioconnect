@@ -14,6 +14,7 @@ interface PostsContextType {
   totalPosts: number;
   fetchPosts: (page?: number, refresh?: boolean) => Promise<void>;
   createPost: (postData: PostCreate) => Promise<{ success: boolean; error?: string }>;
+  deletePost: (postId: number) => Promise<{ success: boolean; error?: string }>;
   likePost: (postId: number) => Promise<void>;
   repost: (postId: number) => Promise<void>;
   createComment: (postId: number, content: string) => Promise<{ success: boolean; error?: string }>;
@@ -90,6 +91,28 @@ export function PostsProvider({ children }: PostsProviderProps) {
         return { success: true };
       } else {
         return { success: false, error: response.error || 'Failed to create post' };
+      }
+    } catch (error) {
+      return { success: false, error: 'Network error' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deletePost = async (postId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await apiClient.deletePost(postId);
+      
+      if (response.data) {
+        // Remove the post from the list
+        setPosts(prev => prev.filter(post => post.id !== postId));
+        setTotalPosts(prev => Math.max(0, prev - 1));
+        return { success: true };
+      } else {
+        return { success: false, error: response.error || 'Failed to delete post' };
       }
     } catch (error) {
       return { success: false, error: 'Network error' };
@@ -211,6 +234,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
     totalPosts,
     fetchPosts,
     createPost,
+    deletePost,
     likePost,
     repost,
     createComment,

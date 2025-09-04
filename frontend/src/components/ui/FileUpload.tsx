@@ -31,6 +31,7 @@ export default function FileUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -60,28 +61,34 @@ export default function FileUpload({
       return;
     }
 
-    // Create preview
+    // Create preview immediately
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Upload file
-    uploadFile(file);
+    // Upload file after preview is set
+    setTimeout(() => {
+      uploadFile(file);
+    }, 100);
   };
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
     setUploadProgress(null);
+    setUploadSuccess(false);
 
     try {
       const response = await fileUploader.uploadMedia(file, (progress) => {
         setUploadProgress(progress);
       });
 
+      setUploadSuccess(true);
       onUpload(response.media_url!, response.media_type!);
-      setPreview(null);
+      
+      // Keep preview visible until user manually clears it or submits
+      // Don't auto-clear the preview
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Upload failed');
       setPreview(null);
@@ -117,7 +124,7 @@ export default function FileUpload({
       
       {preview ? (
         <div className="relative">
-          <div className="relative rounded-lg overflow-hidden bg-gray-100">
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
             {preview.startsWith('data:image/') ? (
               <img 
                 src={preview} 
@@ -132,29 +139,63 @@ export default function FileUpload({
               />
             )}
             
+            {/* Upload Status Overlay */}
             {isUploading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                 <div className="text-center text-white">
                   <CloudArrowUpIcon className="h-8 w-8 mx-auto mb-2 animate-bounce" />
-                  <p className="text-sm">Uploading...</p>
+                  <p className="text-sm font-medium">Uploading...</p>
                   {uploadProgress && (
-                    <div className="w-32 bg-white/20 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-white h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress.percentage}%` }}
-                      />
+                    <div className="mt-3">
+                      <div className="w-32 bg-white/20 rounded-full h-2 mb-1">
+                        <div 
+                          className="bg-white h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress.percentage}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-white/80">{uploadProgress.percentage}%</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
             
+            {/* Success Indicator */}
+            {!isUploading && uploadSuccess && (
+              <div className="absolute top-2 left-2">
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-500 text-white rounded-full text-xs font-medium animate-pulse">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  Uploaded!
+                </div>
+              </div>
+            )}
+            
+            {/* Ready Indicator */}
+            {!isUploading && !uploadSuccess && (
+              <div className="absolute top-2 left-2">
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  Ready
+                </div>
+              </div>
+            )}
+            
+            {/* Remove Button */}
             <button
               onClick={clearPreview}
-              className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+              className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-red-500 transition-colors"
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
+          </div>
+          
+          {/* File Info */}
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            {preview.startsWith('data:image/') ? '📷 Image' : '🎥 Video'} • {
+              isUploading ? 'Uploading...' : 
+              uploadSuccess ? 'Uploaded successfully!' : 
+              'Ready to post'
+            }
           </div>
         </div>
       ) : (
@@ -162,7 +203,7 @@ export default function FileUpload({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
           className={`
             border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200
             ${isDragging 
@@ -192,3 +233,4 @@ export default function FileUpload({
     </div>
   );
 }
+

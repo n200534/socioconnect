@@ -158,6 +158,7 @@ async def upload_media(
         
         # Determine media type
         media_type = "image" if file.content_type in ALLOWED_IMAGE_TYPES else "video"
+        # Return relative URL for media access
         media_url = f"/api/v1/uploads/media/{filename}"
         
         return {

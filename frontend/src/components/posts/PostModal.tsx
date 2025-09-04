@@ -33,6 +33,7 @@ export default function PostModal({ isOpen, onClose }: PostModalProps) {
     if (!content.trim() && !mediaUrl) return;
     
     setError(null);
+    
     const result = await createPost({ 
       content: content.trim(),
       media_url: mediaUrl || undefined,

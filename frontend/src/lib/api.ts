@@ -113,7 +113,7 @@ class ApiClient {
 
     // Add authorization header if token exists
     if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
+      (headers as any).Authorization = `Bearer ${this.accessToken}`;
     }
 
     try {
@@ -273,6 +273,12 @@ class ApiClient {
     });
   }
 
+  async deletePost(postId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/api/v1/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getUserPosts(userId: number, page = 1, size = 20): Promise<ApiResponse<{ posts: Post[]; total: number; page: number; size: number; has_next: boolean; has_prev: boolean }>> {
     return this.request(`/api/v1/posts/user/${userId}?page=${page}&size=${size}`);
   }
@@ -299,12 +305,6 @@ class ApiClient {
 
   async getComments(postId: number): Promise<ApiResponse<Comment[]>> {
     return this.request(`/api/v1/interactions/posts/${postId}/comments`);
-  }
-
-  async followUser(userId: number): Promise<ApiResponse<{ message: string; following: boolean }>> {
-    return this.request(`/api/v1/interactions/users/${userId}/follow`, {
-      method: 'POST',
-    });
   }
 
   // Token management
