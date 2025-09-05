@@ -1,15 +1,9 @@
 services:
   - type: web
     name: socioconnect-backend
-    env: python
+    env: docker
     plan: free
-    pythonVersion: "3.11.9"
-    buildCommand: |
-      python --version
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./backend/Dockerfile
     envVars:
       - key: DATABASE_URL
         fromDatabase:
