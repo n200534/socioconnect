@@ -40,10 +40,9 @@ async def update_my_profile(
 @router.get("/{user_id}", response_model=UserProfile)
 async def get_user_profile(
     user_id: int,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get user profile by ID."""
+    """Get user profile by ID (public endpoint)."""
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:

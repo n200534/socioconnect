@@ -255,10 +255,9 @@ async def get_user_posts(
     user_id: int,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get posts by a specific user."""
+    """Get posts by a specific user (public endpoint)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
