@@ -8,7 +8,10 @@ services:
       python --version
       pip install --upgrade pip
       pip install -r requirements.txt
-    startCommand: ./start.sh
+    startCommand: |
+      alembic stamp base || echo "Stamping base failed, continuing..."
+      alembic upgrade head || echo "Migration failed, continuing..."
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
