@@ -136,6 +136,11 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Debug logging
+    console.log('API Request URL:', url);
+    console.log('API Base URL:', this.baseURL);
+    console.log('Environment API URL:', process.env.NEXT_PUBLIC_API_URL);
+    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -228,7 +233,7 @@ class ApiClient {
       
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         return {
-          error: 'Cannot connect to server. Please check if the backend is running on http://localhost:8000'
+          error: `Cannot connect to server. Please check if the backend is running on ${this.baseURL}`
         };
       }
       
