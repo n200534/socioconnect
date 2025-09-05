@@ -2,12 +2,14 @@
 
 # Run database migrations with error handling
 echo "Running database migrations..."
-alembic upgrade head || {
-    echo "Migration failed, trying to stamp head..."
-    alembic stamp head
-    echo "Stamped head, trying upgrade again..."
-    alembic upgrade head
-}
+
+# Try to stamp base first
+echo "Attempting to stamp base..."
+alembic stamp base || echo "Stamping base failed, continuing..."
+
+# Try to upgrade
+echo "Attempting to upgrade head..."
+alembic upgrade head || echo "Migration failed, continuing..."
 
 # Start the application
 echo "Starting FastAPI application..."
