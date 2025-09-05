@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: socioconnect-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: socioconnect-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "https://socioconnect-frontend.vercel.app,http://localhost:3000"
+
+databases:
+  - name: socioconnect-db
+    plan: free

@@ -52,7 +52,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
         if (refresh || page === 1) {
           setPosts(response.data.posts || []);
         } else {
-          setPosts(prev => [...prev, ...(response.data.posts || [])]);
+          setPosts(prev => [...prev, ...(response.data?.posts || [])]);
         }
         
         setHasNext(response.data.has_next || false);

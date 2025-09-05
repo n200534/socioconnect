@@ -52,11 +52,13 @@ export default function SignupPage() {
           errorMessage = result.error;
         } else if (Array.isArray(result.error)) {
           // Handle validation errors array
-          errorMessage = result.error.map((err: any) => err.msg || err.message || 'Validation error').join(', ');
-        } else if (result.error.detail) {
-          errorMessage = result.error.detail;
-        } else if (result.error.message) {
-          errorMessage = result.error.message;
+          errorMessage = (result.error as any[]).map((err: any) => err.msg || err.message || 'Validation error').join(', ');
+        } else if (typeof result.error === 'object' && result.error !== null) {
+          if ('detail' in result.error) {
+            errorMessage = (result.error as any).detail;
+          } else if ('message' in result.error) {
+            errorMessage = (result.error as any).message;
+          }
         }
       }
       setError(errorMessage);

@@ -1,38 +1,41 @@
 # FastAPI and ASGI server
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
 
 # Database
-sqlalchemy>=2.0.0
-alembic>=1.12.0
-psycopg2-binary>=2.9.0
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9
 
 # Authentication & Security
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
 
 # Redis for caching
-redis>=5.0.0
+redis==5.0.1
 
 # Environment variables
-python-dotenv>=1.0.0
+python-dotenv==1.0.0
 
 # Validation and serialization
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
 
 # Development tools
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-httpx>=0.25.0
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
 
 # File handling
-aiofiles>=23.2.0
-Pillow>=10.0.0
+aiofiles==23.2.1
+Pillow==10.1.0
 
 # Date/time handling
-python-dateutil>=2.8.0
+python-dateutil==2.8.2
 
 # Email (for future use)
-fastapi-mail>=1.4.0
+fastapi-mail==1.4.1
+
+# Additional production dependencies
+gunicorn==21.2.0

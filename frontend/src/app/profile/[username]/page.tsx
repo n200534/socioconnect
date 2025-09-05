@@ -114,7 +114,7 @@ export default function UserProfilePage() {
         console.log('Unfollow response:', response);
         if (response.data) {
           setIsFollowing(false);
-          setProfileUser(prev => ({
+          setProfileUser((prev: any) => ({
             ...prev,
             followers_count: prev.followers_count - 1
           }));
@@ -125,7 +125,7 @@ export default function UserProfilePage() {
         console.log('Follow response:', response);
         if (response.data) {
           setIsFollowing(true);
-          setProfileUser(prev => ({
+          setProfileUser((prev: any) => ({
             ...prev,
             followers_count: prev.followers_count + 1
           }));
@@ -146,7 +146,7 @@ export default function UserProfilePage() {
       const foundUser = posts.find(post => post.author.username === username)?.author;
       if (foundUser) {
         setProfileUser(foundUser);
-        setIsFollowing(foundUser.is_following || false);
+        setIsFollowing((foundUser as any).is_following || false);
         // Filter posts by this user
         const filteredPosts = posts.filter(post => {
           if (post.author_id === foundUser.id) {

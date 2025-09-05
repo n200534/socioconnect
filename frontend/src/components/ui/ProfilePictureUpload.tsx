@@ -163,7 +163,30 @@ export default function ProfilePictureUpload({
             e.currentTarget.style.display = 'none';
             const parent = e.currentTarget.parentElement;
             if (parent) {
-              parent.innerHTML = getDefaultAvatarContent();
+              // Create a new div with the default avatar content
+              const defaultAvatar = document.createElement('div');
+              defaultAvatar.className = 'w-full h-full rounded-full flex items-center justify-center text-white font-bold text-lg';
+              
+              // Use the same color selection logic as getDefaultAvatarContent
+              const colors = [
+                { from: '#3B82F6', to: '#1E40AF' },
+                { from: '#8B5CF6', to: '#6D28D9' },
+                { from: '#EC4899', to: '#BE185D' },
+                { from: '#10B981', to: '#047857' },
+                { from: '#F59E0B', to: '#B45309' },
+                { from: '#EF4444', to: '#B91C1C' },
+                { from: '#6366F1', to: '#4338CA' },
+                { from: '#14B8A6', to: '#0F766E' },
+                { from: '#F97316', to: '#C2410C' },
+                { from: '#84CC16', to: '#65A30D' }
+              ];
+              const displayName = user?.full_name || user?.username || 'User';
+              const colorIndex = displayName.length % colors.length;
+              const selectedColor = colors[colorIndex];
+              
+              defaultAvatar.style.background = `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})`;
+              defaultAvatar.textContent = displayName.charAt(0).toUpperCase();
+              parent.appendChild(defaultAvatar);
             }
           }}
         />
