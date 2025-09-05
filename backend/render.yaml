@@ -25,7 +25,7 @@ services:
       - key: DEBUG
         value: "false"
       - key: CORS_ORIGINS
-        value: "https://socioconnect-frontend.vercel.app,http://localhost:3000"
+        value: "https://socioconnect-live.vercel.app,http://localhost:3000"
 
 databases:
   - name: socioconnect-db
