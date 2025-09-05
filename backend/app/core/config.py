@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
     
-    @field_validator("ALLOWED_ORIGINS", mode="after")
+    @field_validator("CORS_ORIGINS", mode="after")
     @classmethod
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
