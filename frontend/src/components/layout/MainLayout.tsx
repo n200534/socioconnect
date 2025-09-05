@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { Avatar } from '@radix-ui/react-avatar';
 import PostModal from '@/components/posts/PostModal';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 const navigation = [
   { name: 'Home', href: '/', icon: HomeIcon, solidIcon: HomeSolidIcon },
@@ -37,6 +38,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
   const pathname = usePathname();
+  const { unreadCount } = useNotifications();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-cyan-50">
@@ -64,18 +66,27 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               const IconComponent = isActive ? item.solidIcon : item.icon;
+              const showBadge = item.name === 'Notifications' && unreadCount > 0;
+              
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl mb-2 transition-all duration-200 ${
+                  className={`flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl mb-2 transition-all duration-200 relative ${
                     isActive 
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-medium' 
                       : 'text-gray-700 hover:bg-white/50 hover:text-gray-900'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <IconComponent className="h-5 w-5" />
+                  <div className="relative">
+                    <IconComponent className="h-5 w-5" />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                   {item.name}
                 </Link>
               );
@@ -112,19 +123,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               const IconComponent = isActive ? item.solidIcon : item.icon;
+              const showBadge = item.name === 'Notifications' && unreadCount > 0;
+              
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl mb-2 transition-all duration-200 group ${
+                  className={`flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl mb-2 transition-all duration-200 group relative ${
                     isActive 
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-medium' 
                       : 'text-gray-700 hover:bg-white/50 hover:text-gray-900'
                   }`}
                 >
-                  <IconComponent className={`h-5 w-5 transition-transform group-hover:scale-110 ${
-                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                  }`} />
+                  <div className="relative">
+                    <IconComponent className={`h-5 w-5 transition-transform group-hover:scale-110 ${
+                      isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                    }`} />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                   {item.name}
                 </Link>
               );
@@ -177,9 +197,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <Link href="/notifications" className="relative p-2 hover:bg-white/20 rounded-full transition-colors">
                 <BellIcon className="h-6 w-6 text-gray-600" />
-              </button>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>

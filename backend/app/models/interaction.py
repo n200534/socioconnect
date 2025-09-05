@@ -45,6 +45,7 @@ class Comment(Base):
     author = relationship("User", back_populates="comments")
     post = relationship("Post", back_populates="comments")
     replies = relationship("Comment", backref="parent", remote_side=[id])
+    notifications = relationship("Notification", back_populates="comment", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Comment(id={self.id}, author_id={self.author_id}, post_id={self.post_id})>"

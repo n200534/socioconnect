@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.post import Post
 from app.models.interaction import Like, Comment, Repost, Follow
 from app.api.v1.endpoints.auth import get_current_user
+from app.services.notification_service import NotificationService
 
 router = APIRouter()
 
@@ -49,6 +50,11 @@ async def like_post(
         new_like = Like(user_id=current_user.id, post_id=post_id)
         db.add(new_like)
         db.commit()
+        
+        # Create notification
+        notification_service = NotificationService(db)
+        notification_service.create_like_notification(post, current_user)
+        
         return {"message": "Post liked", "liked": True}
 
 
@@ -78,6 +84,10 @@ async def create_comment(
     db.add(comment)
     db.commit()
     db.refresh(comment)
+    
+    # Create notification
+    notification_service = NotificationService(db)
+    notification_service.create_comment_notification(post, comment, current_user)
     
     return comment
 
@@ -162,6 +172,10 @@ async def repost(
         db.add(repost_post)
         db.commit()
         
+        # Create notification
+        notification_service = NotificationService(db)
+        notification_service.create_repost_notification(post, current_user)
+        
         return {"message": "Post reposted", "reposted": True}
 
 
@@ -203,6 +217,11 @@ async def follow_user(
         db.add(new_follow)
         db.commit()
         db.refresh(new_follow)
+        
+        # Create notification
+        notification_service = NotificationService(db)
+        notification_service.create_follow_notification(target_user, current_user)
+        
         return new_follow
 
 

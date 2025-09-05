@@ -1,101 +1,196 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { BellIcon, HeartIcon, ChatBubbleLeftIcon, ArrowPathIcon, UserPlusIcon } from '@heroicons/react/24/outline';
-
-// TODO: Replace with real notifications from API
-const notifications: any[] = [];
-
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'like':
-      return <HeartIcon className="h-5 w-5 text-red-500" />;
-    case 'comment':
-      return <ChatBubbleLeftIcon className="h-5 w-5 text-blue-500" />;
-    case 'repost':
-      return <ArrowPathIcon className="h-5 w-5 text-green-500" />;
-    case 'follow':
-      return <UserPlusIcon className="h-5 w-5 text-purple-500" />;
-    default:
-      return <BellIcon className="h-5 w-5 text-gray-500" />;
-  }
-};
+import NotificationItem from '@/components/notifications/NotificationItem';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { 
+  BellIcon, 
+  CheckIcon, 
+  TrashIcon,
+  FunnelIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 
 export default function NotificationsPage() {
+  const { 
+    notifications, 
+    stats, 
+    isLoading, 
+    error, 
+    fetchNotifications, 
+    markAllAsRead, 
+    clearAllNotifications 
+  } = useNotifications();
+  
+  const [filter, setFilter] = useState<{
+    type?: string;
+    is_read?: boolean;
+  }>({});
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications(filter);
+  }, [filter]);
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+  };
+
+  const handleClearAll = async () => {
+    if (confirm('Are you sure you want to clear all notifications? This action cannot be undone.')) {
+      await clearAllNotifications();
+    }
+  };
+
+  const handleFilterChange = (key: string, value: string | boolean | undefined) => {
+    setFilter(prev => ({
+      ...prev,
+      [key]: value === 'all' ? undefined : value
+    }));
+  };
+
+  const filteredNotifications = (notifications || []).filter(notification => {
+    if (filter.type && notification.type !== filter.type) return false;
+    if (filter.is_read !== undefined && notification.is_read !== filter.is_read) return false;
+    return true;
+  });
+
   return (
     <ProtectedRoute>
       <MainLayout>
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
-          </div>
-          
-          <div className="divide-y divide-gray-200">
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-400 mb-4">
-                  <BellIcon className="w-16 h-16 mx-auto" />
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+                  {stats && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {stats.unread} unread • {stats.total} total
+                    </p>
+                  )}
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications yet</h3>
-                <p className="text-gray-500">When people interact with your posts, you'll see notifications here.</p>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Filter notifications"
+                  >
+                    <FunnelIcon className="h-5 w-5" />
+                  </button>
+                  
+                  {stats && stats.unread > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1"
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                      Mark all read
+                    </button>
+                  )}
+                  
+                  {(notifications || []).length > 0 && (
+                    <button
+                      onClick={handleClearAll}
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Clear all notifications"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
               </div>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors ${
-                    !notification.isRead ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
+              
+              {/* Filters */}
+              {showFilters && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                      <select
+                        value={filter.type || 'all'}
+                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                      >
+                        <option value="all">All types</option>
+                        <option value="like">Likes</option>
+                        <option value="comment">Comments</option>
+                        <option value="repost">Reposts</option>
+                        <option value="follow">Follows</option>
+                        <option value="mention">Mentions</option>
+                        <option value="system">System</option>
+                      </select>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">
-                            <span className="font-semibold">{notification.user.name}</span>{' '}
-                            <span className="text-gray-600">{notification.action}</span>
-                          </p>
-                          {notification.post && (
-                            <p className="text-sm text-gray-600 mt-1 truncate">
-                              "{notification.post}"
-                            </p>
-                          )}
-                          {notification.comment && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              "{notification.comment}"
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-500 mt-1">{notification.timestamp}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={filter.is_read === undefined ? 'all' : filter.is_read.toString()}
+                        onChange={(e) => handleFilterChange('is_read', e.target.value === 'all' ? undefined : e.target.value === 'true')}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                      >
+                        <option value="all">All</option>
+                        <option value="false">Unread</option>
+                        <option value="true">Read</option>
+                      </select>
                     </div>
                     
-                    {!notification.isRead && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
-                    )}
+                    <button
+                      onClick={() => setFilter({})}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                      Clear filters
+                    </button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-          
-          {notifications.length > 0 && (
-            <div className="p-4 text-center">
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                Load more notifications
-              </button>
+              )}
             </div>
-          )}
+            
+            {/* Content */}
+            <div className="divide-y divide-gray-200">
+              {isLoading ? (
+                <div className="p-8 text-center">
+                  <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading notifications...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BellIcon className="w-8 h-8 text-red-600" />
+                  </div>
+                  <p className="text-gray-600">Error loading notifications: {error}</p>
+                </div>
+              ) : filteredNotifications.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="text-gray-400 mb-4">
+                    <BellIcon className="w-16 h-16 mx-auto" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {(notifications || []).length === 0 ? 'No notifications yet' : 'No notifications match your filters'}
+                  </h3>
+                  <p className="text-gray-500">
+                    {(notifications || []).length === 0 
+                      ? "When people interact with your posts, you'll see notifications here."
+                      : 'Try adjusting your filters to see more notifications.'
+                    }
+                  </p>
+                </div>
+              ) : (
+                filteredNotifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                  />
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </MainLayout>
+      </MainLayout>
     </ProtectedRoute>
   );
 }

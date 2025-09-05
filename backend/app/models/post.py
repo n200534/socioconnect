@@ -34,6 +34,9 @@ class Post(Base):
     replies = relationship("Post", backref="parent", remote_side=[id], foreign_keys=[parent_id])
     original_post = relationship("Post", backref="original_reposts", remote_side=[id], foreign_keys=[original_post_id])
     
+    # Notifications
+    notifications = relationship("Notification", back_populates="post", cascade="all, delete-orphan")
+    
     def __repr__(self):
         return f"<Post(id={self.id}, author_id={self.author_id}, content='{self.content[:50]}...')>"
     

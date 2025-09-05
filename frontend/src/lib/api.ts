@@ -28,6 +28,34 @@ export interface User {
   posts_count?: number;
 }
 
+export interface Notification {
+  id: number;
+  user_id: number;
+  actor_id?: number;
+  type: 'like' | 'comment' | 'repost' | 'follow' | 'mention' | 'system';
+  title: string;
+  message: string;
+  is_read: boolean;
+  is_archived: boolean;
+  post_id?: number;
+  comment_id?: number;
+  created_at: string;
+  updated_at?: string;
+  actor?: {
+    id: number;
+    username: string;
+    full_name: string;
+    avatar_url?: string;
+    is_verified?: boolean;
+  };
+}
+
+export interface NotificationStats {
+  total: number;
+  unread: number;
+  recent: number;
+}
+
 export interface Post {
   id: number;
   content: string;
@@ -119,10 +147,8 @@ class ApiClient {
     }
 
     try {
-      console.log(`Making request to: ${url}`);
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('Request headers:', headers);
-      console.log('Request options:', options);
+      // Debug logging (can be removed in production)
+      // console.log(`Making request to: ${url}`);
 
       const response = await fetch(url, {
         ...options,
@@ -157,20 +183,36 @@ class ApiClient {
 
       // Check for successful status codes (200-299)
       if (response.status < 200 || response.status >= 300) {
-        console.error('API Error:', data);
-        
         // Handle different error formats
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
-        if (data.detail) {
-          if (Array.isArray(data.detail)) {
-            // Handle validation errors array
-            errorMessage = data.detail.map((err: any) => err.msg || err.message || 'Validation error').join(', ');
-          } else if (typeof data.detail === 'string') {
-            errorMessage = data.detail;
+        if (data && Object.keys(data).length > 0) {
+          console.error('API Error:', data);
+          
+          if (data.detail) {
+            if (Array.isArray(data.detail)) {
+              // Handle validation errors array
+              errorMessage = data.detail.map((err: any) => err.msg || err.message || 'Validation error').join(', ');
+            } else if (typeof data.detail === 'string') {
+              errorMessage = data.detail;
+            }
+          } else if (data.message) {
+            errorMessage = data.message;
+          } else if (data.error) {
+            errorMessage = data.error;
           }
-        } else if (data.message) {
-          errorMessage = data.message;
+        } else {
+          // Handle empty response data
+          console.error('API Error: Empty response data');
+          if (response.status === 401) {
+            errorMessage = 'Authentication required. Please log in again.';
+          } else if (response.status === 403) {
+            errorMessage = 'Access forbidden. You do not have permission to access this resource.';
+          } else if (response.status === 404) {
+            errorMessage = 'Resource not found.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
         }
         
         return {
@@ -368,6 +410,62 @@ class ApiClient {
 
   isAuthenticated(): boolean {
     return !!this.accessToken;
+  }
+
+  // Notification methods
+  async getNotifications(params?: {
+    limit?: number;
+    offset?: number;
+    type?: string;
+    is_read?: boolean;
+    is_archived?: boolean;
+  }): Promise<ApiResponse<Notification[]>> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.is_read !== undefined) queryParams.append('is_read', params.is_read.toString());
+    if (params?.is_archived !== undefined) queryParams.append('is_archived', params.is_archived.toString());
+    
+    const queryString = queryParams.toString();
+    const url = `/api/v1/notifications/${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<Notification[]>(url);
+  }
+
+  async getNotificationStats(): Promise<ApiResponse<NotificationStats>> {
+    return this.request<NotificationStats>('/api/v1/notifications/stats');
+  }
+
+  async markNotificationsRead(notificationIds: number[]): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/api/v1/notifications/mark-read', {
+      method: 'PATCH',
+      body: JSON.stringify({ notification_ids: notificationIds }),
+    });
+  }
+
+  async markAllNotificationsRead(): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/api/v1/notifications/mark-all-read', {
+      method: 'PATCH',
+    });
+  }
+
+  async deleteNotification(notificationId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/api/v1/notifications/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearAllNotifications(): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/api/v1/notifications/', {
+      method: 'DELETE',
+    });
+  }
+
+  async archiveNotification(notificationId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/api/v1/notifications/${notificationId}/archive`, {
+      method: 'PATCH',
+    });
   }
 }
 

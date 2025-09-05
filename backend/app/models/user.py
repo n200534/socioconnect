@@ -46,6 +46,9 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     
+    # Notifications
+    notifications = relationship("Notification", foreign_keys="[Notification.user_id]", cascade="all, delete-orphan")
+    
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
     

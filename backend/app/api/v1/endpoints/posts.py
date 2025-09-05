@@ -20,6 +20,12 @@ async def test_posts_endpoint():
     return {"message": "Posts GET endpoint is working", "status": "success"}
 
 
+@router.get("/test-connection")
+async def test_connection():
+    """Test endpoint to verify frontend can connect to backend."""
+    return {"message": "Frontend can connect to backend", "status": "success", "timestamp": "2025-09-05T13:40:00Z"}
+
+
 @router.get("/public")
 async def get_public_posts(
     page: int = Query(1, ge=1),
