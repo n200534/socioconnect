@@ -21,9 +21,11 @@ export interface User {
   avatar_url?: string;
   is_private: boolean;
   is_active: boolean;
+  is_verified?: boolean;
   created_at: string;
   followers_count: number;
   following_count: number;
+  posts_count?: number;
 }
 
 export interface Post {

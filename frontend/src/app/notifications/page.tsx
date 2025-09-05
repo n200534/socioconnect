@@ -1,6 +1,7 @@
 'use client';
 
 import MainLayout from '@/components/layout/MainLayout';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { BellIcon, HeartIcon, ChatBubbleLeftIcon, ArrowPathIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 
 // TODO: Replace with real notifications from API
@@ -23,7 +24,8 @@ const getNotificationIcon = (type: string) => {
 
 export default function NotificationsPage() {
   return (
-    <MainLayout>
+    <ProtectedRoute>
+      <MainLayout>
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-4 border-b border-gray-200">
@@ -94,5 +96,6 @@ export default function NotificationsPage() {
         </div>
       </div>
     </MainLayout>
+    </ProtectedRoute>
   );
 }

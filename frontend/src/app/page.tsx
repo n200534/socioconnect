@@ -3,34 +3,16 @@
 import MainLayout from '@/components/layout/MainLayout';
 import PostComposer from '@/components/posts/PostComposer';
 import PostCard from '@/components/posts/PostCard';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePosts } from '@/contexts/PostsContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
   const { posts, isLoading, error } = usePosts();
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return (
-      <MainLayout>
-        <div className="max-w-2xl mx-auto p-6">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to SocioConnect</h2>
-            <p className="text-gray-600 mb-8">Please sign in to view your feed</p>
-            <a 
-              href="/login" 
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-large transition-all duration-200"
-            >
-              Sign In
-            </a>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
-    <MainLayout>
+    <ProtectedRoute>
+      <MainLayout>
       <div className="max-w-2xl mx-auto p-6 space-y-6">
         {/* Post Composer */}
         <PostComposer />
@@ -63,5 +45,6 @@ export default function Home() {
         </div>
       </div>
     </MainLayout>
+    </ProtectedRoute>
   );
 }

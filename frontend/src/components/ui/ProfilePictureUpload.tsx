@@ -15,7 +15,7 @@ import { getProfilePictureUrl } from '@/lib/media';
 interface ProfilePictureUploadProps {
   onUpload?: (url: string) => void;
   onError?: (error: string) => void;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
 }
 
@@ -35,7 +35,8 @@ export default function ProfilePictureUpload({
     sm: 'h-16 w-16',
     md: 'h-24 w-24',
     lg: 'h-32 w-32',
-    xl: 'h-40 w-40'
+    xl: 'h-40 w-40',
+    '2xl': 'h-48 w-48'
   };
 
   const handleFileSelect = (file: File) => {
@@ -101,6 +102,27 @@ export default function ProfilePictureUpload({
     }
   };
 
+  const handleDeleteProfilePicture = async () => {
+    if (!user?.avatar_url) return;
+    
+    try {
+      await fileUploader.deleteProfilePicture();
+      await refreshUser();
+      onUpload?.('');
+    } catch (error) {
+      onError?.(error instanceof Error ? error.message : 'Failed to delete profile picture');
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const getAvatarContent = () => {
     if (preview) {
       return (
@@ -131,12 +153,71 @@ export default function ProfilePictureUpload({
     }
     
     if (user?.avatar_url) {
-      return <img src={getProfilePictureUrl(user.avatar_url) || ''} alt={user.full_name} className="w-full h-full object-cover" />;
+      return (
+        <img 
+          src={getProfilePictureUrl(user.avatar_url) || ''} 
+          alt={user.full_name || user.username} 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // If image fails to load, show initials instead
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              parent.innerHTML = getDefaultAvatarContent();
+            }
+          }}
+        />
+      );
     }
     
+    return getDefaultAvatarContent();
+  };
+
+  const getDefaultAvatarContent = () => {
+    const displayName = user?.full_name || user?.username || 'User';
+    const initials = getInitials(displayName);
+    
+    // Generate a consistent color based on the user's name
+    const colors = [
+      { from: '#3B82F6', to: '#1E40AF' }, // blue - more vibrant
+      { from: '#8B5CF6', to: '#6D28D9' }, // purple - more vibrant
+      { from: '#EC4899', to: '#BE185D' }, // pink - more vibrant
+      { from: '#10B981', to: '#047857' }, // green - more vibrant
+      { from: '#F59E0B', to: '#B45309' }, // orange - more vibrant
+      { from: '#EF4444', to: '#B91C1C' }, // red - more vibrant
+      { from: '#6366F1', to: '#4338CA' }, // indigo - more vibrant
+      { from: '#14B8A6', to: '#0F766E' }, // teal - more vibrant
+      { from: '#F97316', to: '#C2410C' }, // amber - new color
+      { from: '#84CC16', to: '#65A30D' }  // lime - new color
+    ];
+    
+    const colorIndex = displayName.length % colors.length;
+    const selectedColor = colors[colorIndex];
+    
     return (
-      <div className="w-full h-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-        <UserIcon className="h-8 w-8 text-white" />
+      <div 
+        className="absolute inset-0 w-full h-full flex items-center justify-center rounded-full border-2 border-white/20"
+        style={{ 
+          background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})`,
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <span 
+          className={`text-white font-bold select-none ${size === '2xl' ? 'text-2xl' : size === 'xl' ? 'text-xl' : size === 'lg' ? 'text-lg' : 'text-sm'}`}
+          style={{
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 255, 255, 0.1)',
+            letterSpacing: '0.1em',
+            lineHeight: '1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            fontWeight: '700'
+          }}
+        >
+          {initials}
+        </span>
       </div>
     );
   };
@@ -152,16 +233,18 @@ export default function ProfilePictureUpload({
       />
       
       <div className="relative group">
-        <Avatar className={`${sizeClasses[size]} rounded-full overflow-hidden shadow-medium cursor-pointer transition-all duration-200 group-hover:shadow-large`}>
+        <Avatar 
+          className={`${sizeClasses[size]} rounded-full overflow-hidden shadow-medium cursor-pointer transition-all duration-200 group-hover:shadow-large`}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
+        >
           {getAvatarContent()}
         </Avatar>
         
         {/* Upload overlay */}
         <div
-          onClick={() => fileInputRef.current?.click()}
           className={`
             absolute inset-0 rounded-full bg-black/50 flex items-center justify-center
-            opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer
+            opacity-0 group-hover:opacity-100 transition-opacity duration-200
             ${isUploading ? 'opacity-100' : ''}
           `}
         >
@@ -186,7 +269,26 @@ export default function ProfilePictureUpload({
               <p className="text-xs">Ready</p>
             </div>
           ) : (
-            <CameraIcon className="h-6 w-6 text-white" />
+            <div className="flex flex-col items-center space-y-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+              >
+                <CameraIcon className={`text-white ${size === '2xl' ? 'h-6 w-6' : size === 'xl' ? 'h-5 w-5' : 'h-4 w-4'}`} />
+              </button>
+              {user?.avatar_url && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteProfilePicture();
+                  }}
+                  className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors"
+                  title="Delete profile picture"
+                >
+                  <XMarkIcon className="h-3 w-3 text-white" />
+                </button>
+              )}
+            </div>
           )}
         </div>
         
