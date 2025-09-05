@@ -8,8 +8,6 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
 import aiofiles
-from PIL import Image
-import io
 
 from app.db.database import get_db
 from app.models.user import User
@@ -44,27 +42,8 @@ def validate_file(file: UploadFile, allowed_types: List[str]) -> bool:
     return True
 
 
-async def process_image(file_content: bytes, max_size: tuple = (1920, 1080)) -> bytes:
-    """Process and optimize image."""
-    try:
-        image = Image.open(io.BytesIO(file_content))
-        
-        # Convert to RGB if necessary
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-        
-        # Resize if too large
-        image.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Save as JPEG with optimization
-        output = io.BytesIO()
-        image.save(output, format="JPEG", quality=85, optimize=True)
-        return output.getvalue()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to process image: {str(e)}"
-        )
+# Image processing removed due to Pillow compatibility issues
+# Files will be saved as-is without processing
 
 
 @router.post("/profile-picture")
@@ -90,16 +69,13 @@ async def upload_profile_picture(
         )
     
     try:
-        # Process image
-        processed_content = await process_image(file_content, (400, 400))
-        
         # Generate unique filename
         filename = generate_unique_filename(file.filename)
         file_path = os.path.join(PROFILE_PICS_DIR, filename)
         
-        # Save file
+        # Save file as-is (no processing)
         async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(processed_content)
+            await f.write(file_content)
         
         # Update user profile
         avatar_url = f"/api/v1/uploads/profile-pictures/{filename}"
@@ -146,15 +122,9 @@ async def upload_media(
         filename = generate_unique_filename(file.filename)
         file_path = os.path.join(MEDIA_DIR, filename)
         
-        # Process if it's an image
-        if file.content_type in ALLOWED_IMAGE_TYPES:
-            processed_content = await process_image(file_content, (1920, 1080))
-            async with aiofiles.open(file_path, 'wb') as f:
-                await f.write(processed_content)
-        else:
-            # For videos, save as-is
-            async with aiofiles.open(file_path, 'wb') as f:
-                await f.write(file_content)
+        # Save file as-is (no processing)
+        async with aiofiles.open(file_path, 'wb') as f:
+            await f.write(file_content)
         
         # Determine media type
         media_type = "image" if file.content_type in ALLOWED_IMAGE_TYPES else "video"
