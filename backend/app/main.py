@@ -27,9 +27,14 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+# Parse CORS origins from string to list
+cors_origins = settings.CORS_ORIGINS
+if isinstance(cors_origins, str):
+    cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -104,10 +109,7 @@ async def cors_debug():
     }
 
 
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    """Handle CORS preflight requests."""
-    return {"message": "OK"}
+# CORS middleware should handle OPTIONS requests automatically
 
 
 # Global exception handler
