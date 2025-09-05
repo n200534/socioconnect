@@ -32,12 +32,23 @@ cors_origins = settings.CORS_ORIGINS
 if isinstance(cors_origins, str):
     cors_origins = [origin.strip() for origin in cors_origins.split(",")]
 
+# Add CORS middleware with explicit configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
     expose_headers=["*"],
 )
 
@@ -102,14 +113,40 @@ async def health_check():
 @app.get("/cors-debug")
 async def cors_debug():
     """Debug CORS configuration."""
+    cors_origins = settings.CORS_ORIGINS
+    if isinstance(cors_origins, str):
+        cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+    
     return {
-        "cors_origins": settings.CORS_ORIGINS,
+        "cors_origins_raw": settings.CORS_ORIGINS,
+        "cors_origins_parsed": cors_origins,
         "allowed_origins": getattr(settings, 'ALLOWED_ORIGINS', 'Not set'),
-        "debug": settings.DEBUG
+        "debug": settings.DEBUG,
+        "environment": settings.ENVIRONMENT
     }
 
 
-# CORS middleware should handle OPTIONS requests automatically
+@app.options("/{path:path}")
+async def options_handler(path: str, request: Request):
+    """Handle CORS preflight requests explicitly."""
+    origin = request.headers.get("origin")
+    
+    # Check if origin is allowed
+    cors_origins = settings.CORS_ORIGINS
+    if isinstance(cors_origins, str):
+        cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+    
+    if origin in cors_origins:
+        from fastapi.responses import Response
+        response = Response()
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        return response
+    
+    return Response(status_code=400)
 
 
 # Global exception handler
